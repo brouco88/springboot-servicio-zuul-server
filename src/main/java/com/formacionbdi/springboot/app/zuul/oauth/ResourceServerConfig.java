@@ -1,5 +1,7 @@
 package com.formacionbdi.springboot.app.zuul.oauth;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -10,10 +12,14 @@ import org.springframework.security.oauth2.config.annotation.web.configurers.Res
 import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.store.JwtTokenStore;
 
+@RefreshScope
 @Configuration
 @EnableResourceServer
 public class ResourceServerConfig extends ResourceServerConfigurerAdapter{
 
+	@Value("${config.security.oauth.jwt.key}")
+	private String jwtKey;
+	
 	@Override
 	public void configure(ResourceServerSecurityConfigurer resources) throws Exception {
 		resources.tokenStore(tokenStore());
@@ -22,10 +28,11 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter{
 	@Override
 	public void configure(HttpSecurity http) throws Exception {
 		http.authorizeRequests().antMatchers("/api/security/oauth/**").permitAll()
-		.antMatchers(HttpMethod.GET,"/api/productos/listar","/api/items/listar","/api/usuarios/usuarios").permitAll()
-		.antMatchers(HttpMethod.GET,"/api/productos/producto/{id}","/api/items/item/{id}/cantidad/{cantidad}"
-				,"/api/usuarios/usuarios/{id}").hasAnyRole("ADMIN","USER")
-		.antMatchers("/api/productos/**","/api/items/**","/api/usuarios/**").hasRole("ADMIN")
+		.antMatchers(HttpMethod.GET, "/api/productos/listar", "/api/items/listar", "/api/usuarios/usuarios").permitAll()
+		.antMatchers(HttpMethod.GET, "/api/productos/ver/{id}", 
+				"/api/items/ver/{id}/cantidad/{cantidad}", 
+				"/api/usuarios/usuarios/{id}").hasAnyRole("ADMIN", "USER")
+		.antMatchers("/api/productos/**", "/api/items/**", "/api/usuarios/**").hasRole("ADMIN")
 		.anyRequest().authenticated();
 		
 		//.antMatchers(HttpMethod.POST,"/api/productos/producto","/api/items/producto","/api/usuarios/usuarios").hasRole("ADMIN")
@@ -35,14 +42,14 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter{
 	}
 	
 	@Bean
-	public JwtTokenStore tokenStore() {		
+	public JwtTokenStore tokenStore() {
 		return new JwtTokenStore(accessTokenConverter());
 	}
 
 	@Bean
 	public JwtAccessTokenConverter accessTokenConverter() {
 		JwtAccessTokenConverter tokenConverter = new JwtAccessTokenConverter();
-		tokenConverter.setSigningKey("codigo_secreto_aeiou");
+		tokenConverter.setSigningKey(jwtKey);
 		return tokenConverter;
 	}
 	
